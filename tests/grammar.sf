@@ -1,0 +1,29 @@
+import module as m
+from mod import ModFunction, OtherFunction
+
+class TestClass
+    a =
+    b =
+    c =
+    fun __main__(self, _a, _b = 0, _c = None)
+        self.a = _a
+        self.b = _b
+        self.c = _c if _c else 0
+    
+    fun operator+(self, other)
+        return TestClass(self.a + other.a, self.b + other.b, self.c + other.c)
+    
+    fun operator-(self, other)
+        return TestClass(self.a - other.a, self.b - other.b, self.c - other.c)
+    
+    fun __stdout__(self)
+        return '(%d,%d,%d)' % (self.a, self.b, self.c)
+
+obj = TestClass(20, 30, 40)
+other = TestClass(100, 120, 130)
+write(obj + other)
+write(obj - other)
+write(obj, other)
+
+arr = TestClass(i, i + 1, i + 2) for i in 1 to 100 step 2
+arr_cpy = {a = 0} while a < len(arr) (a, a += 1)[0]
