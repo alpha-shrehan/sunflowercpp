@@ -46,6 +46,48 @@ ast_expression *test_puts(Module *m, int *state_flag)
     return new ast_expr_bool(true);
 }
 
+ast_expression *test_write(Module *m, int *state_flag)
+{
+    ast_expression *arg1 = m->names.get("argv")->val;
+    ast_expression *vjoin = m->names.get("join")->val;
+    ast_expression *vend = m->names.get("end")->val;
+    assert(arg1 != nullptr);
+
+    ast_expr_array *arr = (ast_expr_array *)arg1;
+    std::string s = "";
+
+    for (size_t i = 0; i < arr->value.size(); i++)
+    {
+        ast_expression *n = arr->value[i]->val;
+
+        switch (n->expr_type)
+        {
+        case AST_EXPR_BOOL:
+            s += ((ast_expr_bool *)n)->to_string();
+            break;
+        case AST_EXPR_INT:
+            s += ((ast_expr_int *)n)->to_string();
+            break;
+        case AST_EXPR_FLOAT:
+            s += ((ast_expr_float *)n)->to_string();
+            break;
+        case AST_EXPR_STRING:
+            s += ((ast_expr_string *)n)->to_string();
+            break;
+
+        default:
+            s += n->to_string();
+            break;
+        }
+
+        if (i != arr->value.size() - 1)
+            s += vjoin->to_string();
+    }
+
+    printf("%s", (s + vend->to_string()).c_str());
+    return new ast_expr_bool(true);
+}
+
 void test1()
 {
     std::string s = read_file("..\\..\\tests\\test.sf");
@@ -68,12 +110,25 @@ void test1()
     function *ff = add_function_to_fstack(f);
     mod->names.set("puts", add_to_stack(new stack_node(new ast_expr_function(ff), 0)));
 
+    function *f2 = new function("write", {"argv", "join", "end"});
+    f2->def_vals = {
+        nullptr,
+        new ast_expr_string(" "),
+        new ast_expr_string("\n")};
+    
+    f2->isnative = true;
+    f2->va_args = true;
+    f2->native = test_write;
+    function *ff2 = add_function_to_fstack(f2);
+    mod->names.set("write", add_to_stack(new stack_node(new ast_expr_function(ff2), 0)));
+
     int sf = STATE_OK;
     // while (1)
     {
         ip_eval_tree(mod, &sf);
         // mod->names.~name_lookup();
         // mod->names.set("puts", add_to_stack(new stack_node(new ast_expr_function(ff), 0)));
+        // mod->names.set("write", add_to_stack(new stack_node(new ast_expr_function(ff2), 0)));
         // sf = STATE_OK;
 
         // std::cout << getStack().size() << std::endl;

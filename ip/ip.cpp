@@ -262,7 +262,6 @@ namespace sf
             function *f = func->value;
 
             std::vector<ast_expression *> eval_args;
-
             for (size_t i = 0; i < fc->args.size(); i++)
             {
                 ast_expression *ev_exp = ip_eval_expr(fc->args[i], mod, state_flag);
@@ -280,9 +279,60 @@ namespace sf
                 nd->ast_nodes = f->body;
 
             gstack_set_bp();
+            if (not f->va_args)
+            {
+                for (size_t i = 0; i < eval_args.size(); i++)
+                {
+                    nd->names.set(f->args[i], add_to_stack(new stack_node(eval_args[i], 0)));
+                }
+            }
+            else
+            {
+                int void_arg_idx = -1;
+
+                for (
+                    size_t j = 0;
+                    j < f->def_vals.size() and
+                    void_arg_idx == -1;
+                    j++)
+                {
+                    if (f->def_vals[j] == nullptr)
+                        void_arg_idx = j;
+                }
+
+                assert(void_arg_idx != -1);
+
+                std::vector<stack_node *> _va_args;
+                _va_args.reserve(eval_args.size());
+
+                std::transform(eval_args.begin(), eval_args.end(), std::back_inserter(_va_args),
+                               [](ast_expression *e) -> stack_node *
+                               { return add_to_stack(new stack_node(e, 1)); });
+
+                nd->names.set(f->args[void_arg_idx], add_to_stack(new stack_node(new ast_expr_array(_va_args), 0)));
+
+                for (size_t i = 0; i < f->def_vals.size(); i++)
+                {
+                    if (i == void_arg_idx)
+                        continue;
+                    nd->names.set(f->args[i], add_to_stack(new stack_node(ip_eval_expr(f->def_vals[i], mod, state_flag), 0)));
+                }
+            }
+
             for (size_t i = 0; i < f->args.size(); i++)
             {
-                nd->names.set(f->args[i], add_to_stack(new stack_node(eval_args[i], 0)));
+                if (nd->names.get(f->args[i]) == nullptr)
+                {
+                    if (i < f->def_vals.size())
+                        nd->names.set(f->args[i], add_to_stack(new stack_node(ip_eval_expr(f->def_vals[i], mod, state_flag), 0)));
+                    else
+                    {
+                        /* Invalid number of arguments passed. */
+                        if (state_flag != nullptr)
+                            *state_flag = STATE_ERROR;
+                        goto flag_error;
+                    }
+                }
             }
 
             if (f->isnative)

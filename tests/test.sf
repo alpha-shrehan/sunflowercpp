@@ -1,4 +1,1 @@
-a = [1, 2, 3, 4, 5]
-b = a[4]
-puts(a)
-puts(b)
+write("Hello", "World", 10, 20)
